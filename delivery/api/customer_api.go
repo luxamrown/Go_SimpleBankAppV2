@@ -1,6 +1,8 @@
 package api
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"mohamadelabror.me/simplebankappv2/delivery/appreq"
 	"mohamadelabror.me/simplebankappv2/delivery/jwt"
@@ -12,6 +14,8 @@ type CustomerApi struct {
 	registerUseCase usecase.RegisterAccountUseCase
 	loginUseCase    usecase.LoginUseCase
 	logoutUseCase   usecase.LogoutUseCase
+	transferUseCase usecase.TransferUseCase
+	addLogUseCase   usecase.AddLogUseCase
 }
 
 func (cu *CustomerApi) UserRegister() gin.HandlerFunc {
@@ -24,7 +28,8 @@ func (cu *CustomerApi) UserRegister() gin.HandlerFunc {
 			})
 			return
 		}
-		err = cu.registerUseCase.RegisterAccount(util.GenerateUuid(), newAcc.AccountNumber, newAcc.UserName, newAcc.UserPassword, newAcc.Balance)
+		newAccountNumber := util.GenerateAccountNumber()
+		err = cu.registerUseCase.RegisterAccount(util.GenerateUuid(), newAccountNumber, newAcc.UserName, newAcc.UserPin, newAcc.UserPassword, newAcc.Balance)
 		if err != nil {
 			c.JSON(401, gin.H{
 				"message": err.Error(),
@@ -32,7 +37,8 @@ func (cu *CustomerApi) UserRegister() gin.HandlerFunc {
 			return
 		}
 		c.JSON(200, gin.H{
-			"message": "success",
+			"message":        "success",
+			"account_number": newAccountNumber,
 		})
 	}
 }
@@ -92,13 +98,68 @@ func (cu *CustomerApi) UserLogout() gin.HandlerFunc {
 	}
 }
 
-func NewCustomerApi(customerRoute *gin.RouterGroup, registerUseCase usecase.RegisterAccountUseCase, loginUseCase usecase.LoginUseCase, logoutUsecase usecase.LogoutUseCase) {
+func (cu *CustomerApi) UserTransfer() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var transferReq appreq.TransferReq
+		timeNow := time.Now().Format("2006-01-02 15:04:05")
+		err := c.BindJSON(&transferReq)
+		if err != nil {
+			c.JSON(401, gin.H{
+				"message": "cant bind json",
+			})
+			return
+		}
+		err = cu.transferUseCase.Transfer(transferReq.SenderId, transferReq.SenderPin, transferReq.SenderAccNumber, transferReq.ReceiverAccountNumber, transferReq.Amount, transferReq.IsMerchant)
+		if err != nil {
+			c.JSON(401, gin.H{
+				"message": err.Error(),
+			})
+			return
+		}
+		err = cu.addLogUseCase.AddLog(util.GenerateUuid(), transferReq.SenderAccNumber, transferReq.ReceiverAccountNumber, timeNow, transferReq.IsMerchant)
+		if err != nil {
+			c.JSON(401, gin.H{
+				"message": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"message": "success",
+		})
+	}
+}
+
+// func (cu *CustomerApi) UserTest() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+
+// 		var req appreq.RequestTest
+// 		err := c.BindJSON(&req)
+// 		if err != nil {
+// 			c.JSON(401, gin.H{
+// 				"message": "cant bind json",
+// 			})
+// 			return
+// 		}
+// 		// if req.Lain == nil {
+// 		// 	c.JSON(200, "lain kosong")
+// 		// 	return
+// 		// }
+// 		c.JSON(200, req)
+
+// 	}
+// }
+
+func NewCustomerApi(customerRoute *gin.RouterGroup, registerUseCase usecase.RegisterAccountUseCase, loginUseCase usecase.LoginUseCase, logoutUsecase usecase.LogoutUseCase, transferUsecase usecase.TransferUseCase, addLogUseCase usecase.AddLogUseCase) {
 	api := CustomerApi{
 		registerUseCase: registerUseCase,
 		loginUseCase:    loginUseCase,
 		logoutUseCase:   logoutUsecase,
+		transferUseCase: transferUsecase,
+		addLogUseCase:   addLogUseCase,
 	}
 	customerRoute.POST("/register", api.UserRegister())
 	customerRoute.POST("/login", api.UserLogin())
 	customerRoute.POST("/logout", api.UserLogout())
+	customerRoute.POST("/transfer", api.UserTransfer())
 }

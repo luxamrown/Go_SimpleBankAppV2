@@ -8,6 +8,8 @@ type UseCaseManager interface {
 	RegisterAccountUseCase() usecase.RegisterAccountUseCase
 	LoginUseCase() usecase.LoginUseCase
 	LogoutUseCase() usecase.LogoutUseCase
+	TransferUseCase() usecase.TransferUseCase
+	AddLogUseCase() usecase.AddLogUseCase
 }
 
 type useCaseManager struct {
@@ -24,6 +26,14 @@ func (u *useCaseManager) LoginUseCase() usecase.LoginUseCase {
 
 func (u *useCaseManager) LogoutUseCase() usecase.LogoutUseCase {
 	return usecase.NewLogoutUseCase(u.repo.CustomerRepo())
+}
+
+func (u *useCaseManager) TransferUseCase() usecase.TransferUseCase {
+	return usecase.NewTransferUseCase(u.repo.CustomerRepo())
+}
+
+func (u *useCaseManager) AddLogUseCase() usecase.AddLogUseCase {
+	return usecase.NewAddLogUseCase(u.repo.CustomerRepo())
 }
 
 func NewUseCaseManager(repo RepoManager) UseCaseManager {

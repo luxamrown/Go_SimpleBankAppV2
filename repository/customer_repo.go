@@ -12,6 +12,8 @@ type CustomerRepo interface {
 	RegisterNewAccount(customer model.Customer) error
 	Login(username, password string) (string, error)
 	SaveToken(accountNumber, token string) error
+	Transfer(sender_id, sender_pin, senderAccountNumber, receiverAccountNumber string, amount int, isMerchant bool) error
+	AddLogToHistory(senderAccountNumber, receiverAccountNumber, time, id string, isMerchant bool) error
 	Logout(id string) error
 }
 
@@ -20,12 +22,27 @@ type customerRepoImpl struct {
 }
 
 func (c *customerRepoImpl) RegisterNewAccount(customer model.Customer) error {
-	fmt.Println(customer.UserPassword)
-	hashedPass, err := util.HashPassword(customer.UserPassword)
+	var isUserNameExist int
+	// type credToHash struct {
+	// 	password string
+	// 	pin      string
+	// }
+	err := c.customerDB.Get(&isUserNameExist, "SELECT COUNT(account_number) FROM customers WHERE user_name = $1", customer.UserName)
 	if err != nil {
 		return err
 	}
-	_, err = c.customerDB.Exec("INSERT INTO customers(id, account_number, user_name, user_password, balance) VALUES($1, $2, $3, $4, $5)", customer.Id, customer.AccountNumber, customer.UserName, hashedPass, customer.UserBalance)
+	if isUserNameExist == 1 {
+		return fmt.Errorf("username is taken")
+	}
+	hashedPass, err := util.Hashing(customer.UserPassword)
+	if err != nil {
+		return err
+	}
+	hashedPin, err := util.Hashing(customer.UserPin)
+	if err != nil {
+		return err
+	}
+	_, err = c.customerDB.Exec("INSERT INTO customers(id, account_number, user_name, user_pin, user_password, balance) VALUES($1, $2, $3, $4, $5, $6)", customer.Id, customer.AccountNumber, customer.UserName, hashedPin, hashedPass, customer.UserBalance)
 	if err != nil {
 		return err
 	}
@@ -50,13 +67,114 @@ func (c *customerRepoImpl) Login(username, password string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	match := util.CheckPasswordHash(password, selectedAuth.SelectedHashPassword)
+	match := util.CheckHash(password, selectedAuth.SelectedHashPassword)
 	if !match {
-		fmt.Println(selectedAuth.SelectedHashPassword)
 		return "", fmt.Errorf("wrong credential")
 	}
 	return selectedAuth.Id, nil
+}
 
+func (c *customerRepoImpl) Transfer(sender_id, sender_pin, senderAccountNumber, receiverAccountNumber string, amount int, isMerchant bool) error {
+	var isAuth int
+	var selectedPin string
+	err := c.customerDB.Get(&isAuth, "SELECT COUNT(id) FROM customers WHERE id = $1 AND account_number = $2", sender_id, senderAccountNumber)
+	if err != nil {
+		return err
+	}
+	if isAuth == 0 {
+		return fmt.Errorf("unauthorized user")
+	}
+	err = c.customerDB.Get(&selectedPin, "SELECT user_pin FROM customers WHERE id = $1", sender_id)
+	if err != nil {
+		return err
+	}
+	matchPin := util.CheckHash(sender_pin, selectedPin)
+	if !matchPin {
+		return fmt.Errorf("wrong pin")
+	}
+	err = c.ReceiverExistsChecker(receiverAccountNumber, isMerchant)
+	if err != nil {
+		return err
+	}
+	err = c.BalanceValidator(senderAccountNumber, amount)
+	if err != nil {
+		return err
+	}
+	_, err = c.customerDB.Exec("UPDATE customers SET balance = balance - $1 WHERE account_number = $2", amount, senderAccountNumber)
+	if err != nil {
+		return err
+	}
+	if isMerchant {
+		_, err = c.customerDB.Exec("UPDATE merchants SET balance = balance + $1 WHERE id = $2", amount, receiverAccountNumber)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	_, err = c.customerDB.Exec("UPDATE customers SET balance = balance + $1 WHERE account_number = $2", amount, receiverAccountNumber)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *customerRepoImpl) AddLogToHistory(senderAccountNumber, receiverAccountNumber, time, id string, isMerchant bool) error {
+	var senderId string
+	var receiverId string
+	err := c.customerDB.Get(&senderId, "SELECT id FROM customers WHERE account_number = $1", senderAccountNumber)
+	if err != nil {
+		return err
+	}
+	if isMerchant {
+		_, err := c.customerDB.Exec("INSERT INTO history(id, sender_id, receiver_merchant_id, success_at) VALUES ($1, $2, $3, $4)", id, senderId, receiverAccountNumber, time)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	err = c.customerDB.Get(&receiverId, "SELECT id FROM customers WHERE account_number = $1", receiverAccountNumber)
+	if err != nil {
+		return err
+	}
+	_, err = c.customerDB.Exec("INSERT INTO history(id, sender_id, receiver_customer_id, success_at) VALUES ($1, $2, $3, $4)", id, senderId, receiverId, time)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *customerRepoImpl) ReceiverExistsChecker(accountNumber string, isMerchant bool) error {
+	var isReceiverExist int
+	if isMerchant {
+		err := c.customerDB.Get(&isReceiverExist, "SELECT COUNT(id) from merchants WHERE id = $1", accountNumber)
+		if err != nil {
+			return err
+		}
+		if isReceiverExist == 0 {
+			return fmt.Errorf("merchant not found")
+		}
+		return nil
+	}
+	err := c.customerDB.Get(&isReceiverExist, "SELECT COUNT(id) FROM customers WHERE account_number = $1", accountNumber)
+	if err != nil {
+		return err
+	}
+	if isReceiverExist == 0 {
+		return fmt.Errorf("receiver not found")
+	}
+	return nil
+}
+
+func (c *customerRepoImpl) BalanceValidator(accountNumber string, ammount int) error {
+	var balance int
+	err := c.customerDB.Get(&balance, "SELECT balance FROM customers WHERE account_number = $1", accountNumber)
+	if err != nil {
+		return err
+	}
+	if balance < ammount {
+		return fmt.Errorf("balance not sufficent")
+	}
+	return nil
 }
 
 func (c *customerRepoImpl) SaveToken(id, token string) error {

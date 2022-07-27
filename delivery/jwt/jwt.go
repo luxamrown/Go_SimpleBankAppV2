@@ -2,10 +2,10 @@ package jwt
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"mohamadelabror.me/simplebankappv2/util"
 )
 
 var ApplicationName = "SimpleBankApp"
@@ -25,6 +25,9 @@ type AuthHeader struct {
 type Credential struct {
 	Username string `json:"userName"`
 	Password string `json:"userPassword"`
+}
+
+type JwtFromDb struct {
 }
 
 func ParseToken(tokenString string) (jwt.MapClaims, error) {
@@ -63,7 +66,7 @@ func GenerateToken(userName string, email string) (string, error) {
 
 func AuthTokenMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.Request.URL.Path == "/bank/register" || c.Request.URL.Path == "/bank/login" {
+		if c.Request.URL.Path == "/bank/register" || c.Request.URL.Path == "/bank/login" || c.Request.URL.Path == "/bank/test" {
 			c.Next()
 		} else {
 			h := AuthHeader{}
@@ -75,8 +78,7 @@ func AuthTokenMiddleware() gin.HandlerFunc {
 				c.Abort()
 				return
 			}
-			tokenString := strings.Replace(h.AuthorizationHeader, "Bearer ", "", -1)
-			fmt.Println(tokenString)
+			tokenString := util.TokenToString(h.AuthorizationHeader)
 			if tokenString == "" {
 				c.JSON(401, gin.H{
 					"message": "Unauthorized",
@@ -92,7 +94,6 @@ func AuthTokenMiddleware() gin.HandlerFunc {
 				c.Abort()
 				return
 			}
-			fmt.Println(token)
 			if token["iss"] == ApplicationName {
 				c.Next()
 			} else {
