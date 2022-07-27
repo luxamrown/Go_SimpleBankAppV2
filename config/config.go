@@ -42,7 +42,7 @@ func (c Config) ReadConfigFile(path string, name string) Config {
 		return Config{}
 	}
 
-	c.ApiConfig = ApiConfig{Url: v.GetString("API_URL")}
+	c.ApiConfig = ApiConfig{Url: v.GetString("API_URL_DEPLOY")}
 	c.DbConfig = DbConfig{
 		Host:     v.GetString("DB_HOST"),
 		Port:     v.GetString("DB_PORT"),
