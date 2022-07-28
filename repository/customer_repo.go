@@ -14,7 +14,7 @@ type CustomerRepo interface {
 	SaveToken(accountNumber, token string) error
 	Transfer(sender_id, sender_pin, senderAccountNumber, receiverAccountNumber string, amount int, isMerchant bool) error
 	AddLogToHistory(senderAccountNumber, receiverAccountNumber, time, id string, isMerchant bool) error
-	AddTransactionDetail(id, historyId, message string, amount int) error
+	AddTransactionDetail(id, historyId, customerId, message string, amount int) error
 	GetTransactionDetail(idDetail, idHistory string, isMerchant bool) (model.TransactionDetail, error)
 	Logout(id string) error
 }
@@ -145,8 +145,8 @@ func (c *customerRepoImpl) AddLogToHistory(senderAccountNumber, receiverAccountN
 	return nil
 }
 
-func (c *customerRepoImpl) AddTransactionDetail(id, historyId, message string, amount int) error {
-	_, err := c.customerDB.Exec("INSERT INTO transaction_detail(id, history_id, amount, message) VALUES ($1, $2, $3, $4)", id, historyId, amount, message)
+func (c *customerRepoImpl) AddTransactionDetail(id, historyId, customerId, message string, amount int) error {
+	_, err := c.customerDB.Exec("INSERT INTO transaction_detail(id, history_id, customer_id, amount, message) VALUES ($1, $2, $3, $4, $5)", id, historyId, customerId, amount, message)
 	if err != nil {
 		return err
 	}

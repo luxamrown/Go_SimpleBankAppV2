@@ -133,7 +133,7 @@ func (cu *CustomerApi) UserTransfer() gin.HandlerFunc {
 			})
 			return
 		}
-		err = cu.addTransactionDetailUsecase.AddTransactionDetail(idTransactionDetails, idHistory, transferReq.Message, transferReq.Amount)
+		err = cu.addTransactionDetailUsecase.AddTransactionDetail(idTransactionDetails, idHistory, transferReq.SenderId, transferReq.Message, transferReq.Amount)
 		if err != nil {
 			c.JSON(401, gin.H{
 				"error":   true,
