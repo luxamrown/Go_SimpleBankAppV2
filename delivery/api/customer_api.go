@@ -11,11 +11,13 @@ import (
 )
 
 type CustomerApi struct {
-	registerUseCase usecase.RegisterAccountUseCase
-	loginUseCase    usecase.LoginUseCase
-	logoutUseCase   usecase.LogoutUseCase
-	transferUseCase usecase.TransferUseCase
-	addLogUseCase   usecase.AddLogUseCase
+	registerUseCase             usecase.RegisterAccountUseCase
+	loginUseCase                usecase.LoginUseCase
+	logoutUseCase               usecase.LogoutUseCase
+	transferUseCase             usecase.TransferUseCase
+	addLogUseCase               usecase.AddLogUseCase
+	addTransactionDetailUsecase usecase.AddTransactionDetailUseCase
+	getTransactionDetailUseCase usecase.GetTransactionDetailUseCase
 }
 
 func (cu *CustomerApi) UserRegister() gin.HandlerFunc {
@@ -32,6 +34,7 @@ func (cu *CustomerApi) UserRegister() gin.HandlerFunc {
 		err = cu.registerUseCase.RegisterAccount(util.GenerateUuid(), newAccountNumber, newAcc.UserName, newAcc.UserPin, newAcc.UserPassword, newAcc.Balance)
 		if err != nil {
 			c.JSON(401, gin.H{
+				"error":   true,
 				"message": err.Error(),
 			})
 			return
@@ -56,6 +59,7 @@ func (cu *CustomerApi) UserLogin() gin.HandlerFunc {
 		jwtToken, err := jwt.GenerateToken(credential.Username, "luxamrown@corp.id")
 		if err != nil {
 			c.JSON(401, gin.H{
+				"error":   true,
 				"message": err.Error(),
 			})
 			return
@@ -63,6 +67,7 @@ func (cu *CustomerApi) UserLogin() gin.HandlerFunc {
 		selectedId, err := cu.loginUseCase.Login(credential.Username, credential.Password, jwtToken)
 		if err != nil {
 			c.JSON(401, gin.H{
+				"error":   true,
 				"message": err.Error(),
 			})
 			return
@@ -88,6 +93,7 @@ func (cu *CustomerApi) UserLogout() gin.HandlerFunc {
 		err = cu.logoutUseCase.Logout(credential.Id)
 		if err != nil {
 			c.JSON(401, gin.H{
+				"error":   true,
 				"message": err.Error(),
 			})
 			return
@@ -101,7 +107,9 @@ func (cu *CustomerApi) UserLogout() gin.HandlerFunc {
 func (cu *CustomerApi) UserTransfer() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var transferReq appreq.TransferReq
-		timeNow := time.Now().Format("2006-01-02 15:04:05")
+		timeNow := time.Now().Format("2006-01-02 15:04")
+		idHistory := util.GenerateUuid()
+		idTransactionDetails := util.GenerateUuid()
 		err := c.BindJSON(&transferReq)
 		if err != nil {
 			c.JSON(401, gin.H{
@@ -112,20 +120,38 @@ func (cu *CustomerApi) UserTransfer() gin.HandlerFunc {
 		err = cu.transferUseCase.Transfer(transferReq.SenderId, transferReq.SenderPin, transferReq.SenderAccNumber, transferReq.ReceiverAccountNumber, transferReq.Amount, transferReq.IsMerchant)
 		if err != nil {
 			c.JSON(401, gin.H{
+				"error":   true,
 				"message": err.Error(),
 			})
 			return
 		}
-		err = cu.addLogUseCase.AddLog(util.GenerateUuid(), transferReq.SenderAccNumber, transferReq.ReceiverAccountNumber, timeNow, transferReq.IsMerchant)
+		err = cu.addLogUseCase.AddLog(idHistory, transferReq.SenderAccNumber, transferReq.ReceiverAccountNumber, timeNow, transferReq.IsMerchant)
 		if err != nil {
 			c.JSON(401, gin.H{
+				"error":   true,
 				"message": err.Error(),
 			})
 			return
 		}
-
+		err = cu.addTransactionDetailUsecase.AddTransactionDetail(idTransactionDetails, idHistory, transferReq.Message, transferReq.Amount)
+		if err != nil {
+			c.JSON(401, gin.H{
+				"error":   true,
+				"message": err.Error(),
+			})
+			return
+		}
+		newTransactionDetail, err := cu.getTransactionDetailUseCase.GetTransactionDetail(idTransactionDetails, idHistory, transferReq.IsMerchant)
+		if err != nil {
+			c.JSON(401, gin.H{
+				"error":   true,
+				"message": err.Error(),
+			})
+			return
+		}
 		c.JSON(200, gin.H{
 			"message": "success",
+			"data":    newTransactionDetail,
 		})
 	}
 }
@@ -150,13 +176,15 @@ func (cu *CustomerApi) UserTransfer() gin.HandlerFunc {
 // 	}
 // }
 
-func NewCustomerApi(customerRoute *gin.RouterGroup, registerUseCase usecase.RegisterAccountUseCase, loginUseCase usecase.LoginUseCase, logoutUsecase usecase.LogoutUseCase, transferUsecase usecase.TransferUseCase, addLogUseCase usecase.AddLogUseCase) {
+func NewCustomerApi(customerRoute *gin.RouterGroup, registerUseCase usecase.RegisterAccountUseCase, loginUseCase usecase.LoginUseCase, logoutUsecase usecase.LogoutUseCase, transferUsecase usecase.TransferUseCase, addLogUseCase usecase.AddLogUseCase, addTransactionDetail usecase.AddTransactionDetailUseCase, getTransactionDetaiUseCase usecase.GetTransactionDetailUseCase) {
 	api := CustomerApi{
-		registerUseCase: registerUseCase,
-		loginUseCase:    loginUseCase,
-		logoutUseCase:   logoutUsecase,
-		transferUseCase: transferUsecase,
-		addLogUseCase:   addLogUseCase,
+		registerUseCase:             registerUseCase,
+		loginUseCase:                loginUseCase,
+		logoutUseCase:               logoutUsecase,
+		transferUseCase:             transferUsecase,
+		addLogUseCase:               addLogUseCase,
+		addTransactionDetailUsecase: addTransactionDetail,
+		getTransactionDetailUseCase: getTransactionDetaiUseCase,
 	}
 	customerRoute.POST("/register", api.UserRegister())
 	customerRoute.POST("/login", api.UserLogin())

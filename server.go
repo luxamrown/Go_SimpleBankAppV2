@@ -22,7 +22,7 @@ func (a *appServer) initHandlers() {
 func (a *appServer) v1() {
 	a.routerEngine.Use(jwt.AuthTokenMiddleware())
 	customerApiGroup := a.routerEngine.Group("/bank")
-	api.NewCustomerApi(customerApiGroup, a.cfg.UseCaseManager.RegisterAccountUseCase(), a.cfg.UseCaseManager.LoginUseCase(), a.cfg.UseCaseManager.LogoutUseCase(), a.cfg.UseCaseManager.TransferUseCase(), a.cfg.UseCaseManager.AddLogUseCase())
+	api.NewCustomerApi(customerApiGroup, a.cfg.UseCaseManager.RegisterAccountUseCase(), a.cfg.UseCaseManager.LoginUseCase(), a.cfg.UseCaseManager.LogoutUseCase(), a.cfg.UseCaseManager.TransferUseCase(), a.cfg.UseCaseManager.AddLogUseCase(), a.cfg.UseCaseManager.AddTransactionDetail(), a.cfg.UseCaseManager.GetTransactionDetail())
 }
 
 func (a *appServer) Run() {

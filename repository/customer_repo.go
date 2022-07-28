@@ -14,6 +14,8 @@ type CustomerRepo interface {
 	SaveToken(accountNumber, token string) error
 	Transfer(sender_id, sender_pin, senderAccountNumber, receiverAccountNumber string, amount int, isMerchant bool) error
 	AddLogToHistory(senderAccountNumber, receiverAccountNumber, time, id string, isMerchant bool) error
+	AddTransactionDetail(id, historyId, message string, amount int) error
+	GetTransactionDetail(idDetail, idHistory string, isMerchant bool) (model.TransactionDetail, error)
 	Logout(id string) error
 }
 
@@ -141,6 +143,46 @@ func (c *customerRepoImpl) AddLogToHistory(senderAccountNumber, receiverAccountN
 		return err
 	}
 	return nil
+}
+
+func (c *customerRepoImpl) AddTransactionDetail(id, historyId, message string, amount int) error {
+	_, err := c.customerDB.Exec("INSERT INTO transaction_detail(id, history_id, amount, message) VALUES ($1, $2, $3, $4)", id, historyId, amount, message)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *customerRepoImpl) GetTransactionDetail(idDetail, idHistory string, isMerchant bool) (model.TransactionDetail, error) {
+	var getTransactionDep model.TransactionDetailT
+	var getHistoryDep model.HistoryCustomer
+	var getHistoryDepM model.HistoryMerchant
+	var NewTransactionDetail model.TransactionDetail
+	var receiverAccNumber string
+	err := c.customerDB.Get(&getTransactionDep, "SELECT amount, message FROM transaction_detail WHERE id = $1", idDetail)
+	if err != nil {
+		return model.TransactionDetail{}, err
+	}
+
+	if isMerchant {
+		err = c.customerDB.Get(&getHistoryDepM, "SELECT receiver_merchant_id, success_at FROM history WHERE id = $1", idHistory)
+		if err != nil {
+			return model.TransactionDetail{}, err
+		}
+		NewTransactionDetail = model.NewTransactionDetail(idDetail, getHistoryDepM.ReceiverMerchantId, getTransactionDep.Message, getHistoryDepM.SuccesAt, getTransactionDep.Amount)
+		return NewTransactionDetail, nil
+	}
+
+	err = c.customerDB.Get(&getHistoryDep, "SELECT receiver_customer_id, success_at FROM history WHERE id = $1", idHistory)
+	if err != nil {
+		return model.TransactionDetail{}, err
+	}
+	err = c.customerDB.Get(&receiverAccNumber, "SELECT account_number FROM customers WHERE id = $1", getHistoryDep.ReceiverId)
+	if err != nil {
+		return model.TransactionDetail{}, err
+	}
+	NewTransactionDetail = model.NewTransactionDetail(idDetail, receiverAccNumber, getTransactionDep.Message, getHistoryDep.SuccesAt, getTransactionDep.Amount)
+	return NewTransactionDetail, nil
 }
 
 func (c *customerRepoImpl) ReceiverExistsChecker(accountNumber string, isMerchant bool) error {

@@ -15,6 +15,7 @@ type TransferReq struct {
 	SenderAccNumber       string `json:"sender_account_number"`
 	SenderId              string `json:"sender_id"`
 	SenderPin             string `json:"sender_pin"`
+	Message               string `json:"transfer_message"`
 	ReceiverAccountNumber string `json:"receiver_account_number"`
 	Amount                int    `json:"amount_transfer"`
 	IsMerchant            bool   `json:"is_merchant"`
