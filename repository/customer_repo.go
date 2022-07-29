@@ -153,23 +153,55 @@ func (c *customerRepoImpl) AddTransactionDetail(id, historyId, customerId, messa
 	return nil
 }
 
+// func (c *customerRepoImpl) GetTransactionDetail(idDetail, idHistory string, isMerchant bool) (model.TransactionDetail, error) {
+// 	var getTransactionDep model.TransactionDetailT
+// 	var getHistoryDep model.HistoryCustomer
+// 	var getHistoryDepM model.HistoryMerchant
+// 	var NewTransactionDetail model.TransactionDetail
+// 	var receiverAccNumber string
+// 	err := c.customerDB.Get(&getTransactionDep, "SELECT amount, message FROM transaction_detail WHERE id = $1", idDetail)
+// 	if err != nil {
+// 		return model.TransactionDetail{}, err
+// 	}
+
+// 	if isMerchant {
+// 		err = c.customerDB.Get(&getHistoryDepM, "SELECT receiver_merchant_id, success_at FROM history WHERE id = $1", idHistory)
+// 		if err != nil {
+// 			return model.TransactionDetail{}, err
+// 		}
+// 		NewTransactionDetail = model.NewTransactionDetail(idDetail, getHistoryDepM.ReceiverMerchantId, getTransactionDep.Message, getHistoryDepM.SuccesAt, getTransactionDep.Amount)
+// 		return NewTransactionDetail, nil
+// 	}
+
+// 	err = c.customerDB.Get(&getHistoryDep, "SELECT receiver_customer_id, success_at FROM history WHERE id = $1", idHistory)
+// 	if err != nil {
+// 		return model.TransactionDetail{}, err
+// 	}
+// 	err = c.customerDB.Get(&receiverAccNumber, "SELECT account_number FROM customers WHERE id = $1", getHistoryDep.ReceiverId)
+// 	if err != nil {
+// 		return model.TransactionDetail{}, err
+// 	}
+// 	NewTransactionDetail = model.NewTransactionDetail(idDetail, receiverAccNumber, getTransactionDep.Message, getHistoryDep.SuccesAt, getTransactionDep.Amount)
+// 	return NewTransactionDetail, nil
+// }
+
 func (c *customerRepoImpl) GetTransactionDetail(idDetail, idHistory string, isMerchant bool) (model.TransactionDetail, error) {
 	var getTransactionDep model.TransactionDetailT
-	var getHistoryDep model.HistoryCustomer
-	var getHistoryDepM model.HistoryMerchant
 	var NewTransactionDetail model.TransactionDetail
+	var getHistoryDep model.HistoryMerchantTest
 	var receiverAccNumber string
+
 	err := c.customerDB.Get(&getTransactionDep, "SELECT amount, message FROM transaction_detail WHERE id = $1", idDetail)
 	if err != nil {
 		return model.TransactionDetail{}, err
 	}
 
 	if isMerchant {
-		err = c.customerDB.Get(&getHistoryDepM, "SELECT receiver_merchant_id, success_at FROM history WHERE id = $1", idHistory)
+		err = c.customerDB.Get(&getHistoryDep, "SELECT receiver_merchant_id, success_at FROM history WHERE id = $1", idHistory)
 		if err != nil {
 			return model.TransactionDetail{}, err
 		}
-		NewTransactionDetail = model.NewTransactionDetail(idDetail, getHistoryDepM.ReceiverMerchantId, getTransactionDep.Message, getHistoryDepM.SuccesAt, getTransactionDep.Amount)
+		NewTransactionDetail = model.NewTransactionDetail(idDetail, getHistoryDep.ReceiverMerchantId, getTransactionDep.Message, getHistoryDep.SuccesAt, getTransactionDep.Amount)
 		return NewTransactionDetail, nil
 	}
 
@@ -177,7 +209,7 @@ func (c *customerRepoImpl) GetTransactionDetail(idDetail, idHistory string, isMe
 	if err != nil {
 		return model.TransactionDetail{}, err
 	}
-	err = c.customerDB.Get(&receiverAccNumber, "SELECT account_number FROM customers WHERE id = $1", getHistoryDep.ReceiverId)
+	err = c.customerDB.Get(&receiverAccNumber, "SELECT account_number FROM customers WHERE id = $1", getHistoryDep.ReceiverCustomerId)
 	if err != nil {
 		return model.TransactionDetail{}, err
 	}
@@ -185,6 +217,9 @@ func (c *customerRepoImpl) GetTransactionDetail(idDetail, idHistory string, isMe
 	return NewTransactionDetail, nil
 }
 
+// func (c *customerRepoImpl) GetAllTransactionDetail(idCustomer string) ([]model.TransactionDetail, error) {
+// 	var ListTransaction []model.TransactionDetail
+// }
 func (c *customerRepoImpl) ReceiverExistsChecker(accountNumber string, isMerchant bool) error {
 	var isReceiverExist int
 	if isMerchant {

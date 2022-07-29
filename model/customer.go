@@ -15,14 +15,10 @@ type TransactionDetailT struct {
 	Message string `db:"message"`
 }
 
-type HistoryMerchant struct {
-	ReceiverMerchantId string `db:"receiver_merchant_id"`
+type HistoryMerchantTest struct {
+	ReceiverMerchantId string `db:"receiver_merchant_id,omitempty"`
+	ReceiverCustomerId string `db:"receiver_customer_id,omitempty"`
 	SuccesAt           string `db:"success_at"`
-}
-
-type HistoryCustomer struct {
-	ReceiverId string `db:"receiver_customer_id"`
-	SuccesAt   string `db:"success_at"`
 }
 
 type TransactionDetail struct {
