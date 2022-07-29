@@ -16,6 +16,7 @@ type CustomerRepo interface {
 	AddLogToHistory(senderAccountNumber, receiverAccountNumber, time, id string, isMerchant bool) error
 	AddTransactionDetail(id, historyId, customerId, message string, amount int) error
 	GetTransactionDetail(idDetail, idHistory string, isMerchant bool) (model.TransactionDetail, error)
+	GetAllTransactionDetail(idCustomer string) ([]model.TransactionDetail, error)
 	Logout(id string) error
 }
 
@@ -188,9 +189,8 @@ func (c *customerRepoImpl) AddTransactionDetail(id, historyId, customerId, messa
 func (c *customerRepoImpl) GetTransactionDetail(idDetail, idHistory string, isMerchant bool) (model.TransactionDetail, error) {
 	var getTransactionDep model.TransactionDetailT
 	var NewTransactionDetail model.TransactionDetail
-	var getHistoryDep model.HistoryMerchantTest
-	var receiverAccNumber string
-
+	var getHistoryDep model.HistoryMerchant
+	var receiverAccNumber *string
 	err := c.customerDB.Get(&getTransactionDep, "SELECT amount, message FROM transaction_detail WHERE id = $1", idDetail)
 	if err != nil {
 		return model.TransactionDetail{}, err
@@ -217,9 +217,37 @@ func (c *customerRepoImpl) GetTransactionDetail(idDetail, idHistory string, isMe
 	return NewTransactionDetail, nil
 }
 
-// func (c *customerRepoImpl) GetAllTransactionDetail(idCustomer string) ([]model.TransactionDetail, error) {
-// 	var ListTransaction []model.TransactionDetail
-// }
+func (c *customerRepoImpl) GetAllTransactionDetail(idCustomer string) ([]model.TransactionDetail, error) {
+	var ListTransactionMerchant []model.TransactionDetail
+	var ListTransactionCustomer []model.TransactionDetail
+	var ListTransaction []model.TransactionDetail
+	var getTransactionDep []model.TransactionDetailT
+	var getHistoryDep []model.HistoryMerchant
+	err := c.customerDB.Select(&getHistoryDep, "SELECT id, receiver_customer_id, receiver_merchant_id, success_at FROM history WHERE sender_id = $1", idCustomer)
+	if err != nil {
+		return []model.TransactionDetail{}, err
+	}
+	for _, elemH := range getHistoryDep {
+		err := c.customerDB.Select(&getTransactionDep, "SELECT id, amount, message FROM transaction_detail WHERE history_id = $1", elemH.Id)
+		if err != nil {
+			return []model.TransactionDetail{}, err
+		}
+		for _, elemT := range getTransactionDep {
+			if elemH.ReceiverMerchantId == nil {
+				newListTransactionCustomer := model.NewMultipleTransactionDetail(len(getTransactionDep), elemT.Id, elemH.ReceiverCustomerId, elemT.Message, elemH.SuccesAt, elemT.Amount)
+				ListTransactionCustomer = append(ListTransactionCustomer, newListTransactionCustomer...)
+			} else {
+				newListTransactionMerchant := model.NewMultipleTransactionDetail(len(getTransactionDep), elemT.Id, elemH.ReceiverMerchantId, elemT.Message, elemH.SuccesAt, elemT.Amount)
+				ListTransactionMerchant = append(ListTransactionMerchant, newListTransactionMerchant...)
+			}
+		}
+	}
+	ListTransaction = append(ListTransaction, ListTransactionCustomer...)
+	ListTransaction = append(ListTransaction, ListTransactionMerchant...)
+
+	return ListTransaction, nil
+}
+
 func (c *customerRepoImpl) ReceiverExistsChecker(accountNumber string, isMerchant bool) error {
 	var isReceiverExist int
 	if isMerchant {

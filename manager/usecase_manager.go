@@ -10,8 +10,9 @@ type UseCaseManager interface {
 	LogoutUseCase() usecase.LogoutUseCase
 	TransferUseCase() usecase.TransferUseCase
 	AddLogUseCase() usecase.AddLogUseCase
-	AddTransactionDetail() usecase.AddTransactionDetailUseCase
-	GetTransactionDetail() usecase.GetTransactionDetailUseCase
+	AddTransactionDetailUseCase() usecase.AddTransactionDetailUseCase
+	GetTransactionDetailUseCase() usecase.GetTransactionDetailUseCase
+	GetAllTransactionDetail() usecase.GetAllTransactionUseCase
 }
 
 type useCaseManager struct {
@@ -38,12 +39,16 @@ func (u *useCaseManager) AddLogUseCase() usecase.AddLogUseCase {
 	return usecase.NewAddLogUseCase(u.repo.CustomerRepo())
 }
 
-func (u *useCaseManager) AddTransactionDetail() usecase.AddTransactionDetailUseCase {
+func (u *useCaseManager) AddTransactionDetailUseCase() usecase.AddTransactionDetailUseCase {
 	return usecase.NewAddTransactionDetailUseCase(u.repo.CustomerRepo())
 }
 
-func (u *useCaseManager) GetTransactionDetail() usecase.GetTransactionDetailUseCase {
+func (u *useCaseManager) GetTransactionDetailUseCase() usecase.GetTransactionDetailUseCase {
 	return usecase.NewGetTransactionDetailUseCase(u.repo.CustomerRepo())
+}
+
+func (u *useCaseManager) GetAllTransactionDetail() usecase.GetAllTransactionUseCase {
+	return usecase.NewGetAllTransactionUseCase(u.repo.CustomerRepo())
 }
 
 func NewUseCaseManager(repo RepoManager) UseCaseManager {

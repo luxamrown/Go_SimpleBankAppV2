@@ -10,23 +10,26 @@ type Customer struct {
 }
 
 type TransactionDetailT struct {
-	Id      string `db:"id"`
-	Amount  int    `db:"amount"`
-	Message string `db:"message"`
+	Id        string `db:"id,omitempty"`
+	HistoryId string `db:"history_id,omitempty"`
+	CusomerId string `db:"customer_id,omitempty"`
+	Amount    int    `db:"amount,omitempty"`
+	Message   string `db:"message,omitempty"`
 }
 
-type HistoryMerchantTest struct {
-	ReceiverMerchantId string `db:"receiver_merchant_id,omitempty"`
-	ReceiverCustomerId string `db:"receiver_customer_id,omitempty"`
-	SuccesAt           string `db:"success_at"`
+type HistoryMerchant struct {
+	Id                 string  `db:"id,omitempty"`
+	ReceiverMerchantId *string `db:"receiver_merchant_id,omitempty"`
+	ReceiverCustomerId *string `db:"receiver_customer_id,omitempty"`
+	SuccesAt           string  `db:"success_at"`
 }
 
 type TransactionDetail struct {
-	Id                    string
-	ReceiverAccountNumber string
-	Amount                int
-	Message               string
-	Date                  string
+	Id                    string  `json:"id"`
+	ReceiverAccountNumber *string `json:"receiver_account_number"`
+	Amount                int     `json:"amount"`
+	Message               string  `json:"message"`
+	Date                  string  `json:"date"`
 }
 
 func NewCustomer(id, accountNumber, userName, userPin, userPassword string, balance int) Customer {
@@ -40,7 +43,7 @@ func NewCustomer(id, accountNumber, userName, userPin, userPassword string, bala
 	}
 }
 
-func NewTransactionDetail(id, receiverAccNum, message, date string, amount int) TransactionDetail {
+func NewTransactionDetail(id string, receiverAccNum *string, message, date string, amount int) TransactionDetail {
 	return TransactionDetail{
 		Id:                    id,
 		ReceiverAccountNumber: receiverAccNum,
@@ -48,4 +51,13 @@ func NewTransactionDetail(id, receiverAccNum, message, date string, amount int) 
 		Message:               message,
 		Date:                  date,
 	}
+}
+
+func NewMultipleTransactionDetail(idx int, id string, receiverAccNum *string, message, date string, amount int) []TransactionDetail {
+	var multipleTransaction []TransactionDetail
+	for i := 0; i < idx; i++ {
+		newSingleTransaction := NewTransactionDetail(id, receiverAccNum, message, date, amount)
+		multipleTransaction = append(multipleTransaction, newSingleTransaction)
+	}
+	return multipleTransaction
 }

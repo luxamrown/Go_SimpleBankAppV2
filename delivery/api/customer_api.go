@@ -11,13 +11,14 @@ import (
 )
 
 type CustomerApi struct {
-	registerUseCase             usecase.RegisterAccountUseCase
-	loginUseCase                usecase.LoginUseCase
-	logoutUseCase               usecase.LogoutUseCase
-	transferUseCase             usecase.TransferUseCase
-	addLogUseCase               usecase.AddLogUseCase
-	addTransactionDetailUsecase usecase.AddTransactionDetailUseCase
-	getTransactionDetailUseCase usecase.GetTransactionDetailUseCase
+	registerUseCase                usecase.RegisterAccountUseCase
+	loginUseCase                   usecase.LoginUseCase
+	logoutUseCase                  usecase.LogoutUseCase
+	transferUseCase                usecase.TransferUseCase
+	addLogUseCase                  usecase.AddLogUseCase
+	addTransactionDetailUsecase    usecase.AddTransactionDetailUseCase
+	getTransactionDetailUseCase    usecase.GetTransactionDetailUseCase
+	getAllTransactionDetailUseCase usecase.GetAllTransactionUseCase
 }
 
 func (cu *CustomerApi) UserRegister() gin.HandlerFunc {
@@ -156,6 +157,24 @@ func (cu *CustomerApi) UserTransfer() gin.HandlerFunc {
 	}
 }
 
+func (cu *CustomerApi) GetAllTransaction() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userId := c.Param("userId")
+		Transactions, err := cu.getAllTransactionDetailUseCase.GetAllTransactionDetail(userId)
+		if err != nil {
+			c.JSON(401, gin.H{
+				"error":   true,
+				"message": err.Error(),
+			})
+			return
+		}
+		c.JSON(200, gin.H{
+			"message": "succes",
+			"data":    Transactions,
+		})
+	}
+}
+
 // func (cu *CustomerApi) UserTest() gin.HandlerFunc {
 // 	return func(c *gin.Context) {
 
@@ -176,18 +195,20 @@ func (cu *CustomerApi) UserTransfer() gin.HandlerFunc {
 // 	}
 // }
 
-func NewCustomerApi(customerRoute *gin.RouterGroup, registerUseCase usecase.RegisterAccountUseCase, loginUseCase usecase.LoginUseCase, logoutUsecase usecase.LogoutUseCase, transferUsecase usecase.TransferUseCase, addLogUseCase usecase.AddLogUseCase, addTransactionDetail usecase.AddTransactionDetailUseCase, getTransactionDetaiUseCase usecase.GetTransactionDetailUseCase) {
+func NewCustomerApi(customerRoute *gin.RouterGroup, registerUseCase usecase.RegisterAccountUseCase, loginUseCase usecase.LoginUseCase, logoutUsecase usecase.LogoutUseCase, transferUsecase usecase.TransferUseCase, addLogUseCase usecase.AddLogUseCase, addTransactionDetail usecase.AddTransactionDetailUseCase, getTransactionDetaiUseCase usecase.GetTransactionDetailUseCase, getAllTransactionDetailUseCase usecase.GetAllTransactionUseCase) {
 	api := CustomerApi{
-		registerUseCase:             registerUseCase,
-		loginUseCase:                loginUseCase,
-		logoutUseCase:               logoutUsecase,
-		transferUseCase:             transferUsecase,
-		addLogUseCase:               addLogUseCase,
-		addTransactionDetailUsecase: addTransactionDetail,
-		getTransactionDetailUseCase: getTransactionDetaiUseCase,
+		registerUseCase:                registerUseCase,
+		loginUseCase:                   loginUseCase,
+		logoutUseCase:                  logoutUsecase,
+		transferUseCase:                transferUsecase,
+		addLogUseCase:                  addLogUseCase,
+		addTransactionDetailUsecase:    addTransactionDetail,
+		getTransactionDetailUseCase:    getTransactionDetaiUseCase,
+		getAllTransactionDetailUseCase: getAllTransactionDetailUseCase,
 	}
 	customerRoute.POST("/register", api.UserRegister())
 	customerRoute.POST("/login", api.UserLogin())
 	customerRoute.POST("/logout", api.UserLogout())
 	customerRoute.POST("/transfer", api.UserTransfer())
+	customerRoute.GET("/transfer/:userId", api.GetAllTransaction())
 }
