@@ -30,16 +30,17 @@ func (cu *CustomerApi) UserRegister() gin.HandlerFunc {
 
 		err := c.ShouldBindJSON(&newAcc)
 		if err != nil {
-			c.JSON(401, gin.H{
-				"message": "cant bind json",
-			})
+			// c.JSON(400, gin.H{
+			// 	"message": "cant bind json",
+			// })
+			response.NewErrorResponse(400, "Cant bind json", nil)
 			return
 		}
 		newAccountNumber := util.GenerateAccountNumber()
 		err = cu.registerUseCase.RegisterAccount(util.GenerateUuid(), newAccountNumber, newAcc.UserName, newAcc.UserPin, newAcc.UserPassword, newAcc.Balance)
 
 		if err != nil {
-			response.NewErrorResponse(401, err.Error(), nil)
+			response.NewErrorResponse(400, err.Error(), nil)
 
 			// c.JSON(401, gin.H{
 			// 	"error":   true,
@@ -62,14 +63,15 @@ func (cu *CustomerApi) UserLogin() gin.HandlerFunc {
 
 		err := c.ShouldBindJSON(&credential)
 		if err != nil {
-			c.JSON(401, gin.H{
-				"message": "cant bind json",
-			})
+			// c.JSON(400, gin.H{
+			// 	"message": "cant bind json",
+			// })
+			response.NewErrorResponse(400, "Cant bind json", nil)
 			return
 		}
 		jwtToken, err := jwt.GenerateToken(credential.Username, "luxamrown@corp.id")
 		if err != nil {
-			response.NewErrorResponse(401, err.Error(), nil)
+			response.NewErrorResponse(400, err.Error(), nil)
 			// c.JSON(401, gin.H{
 			// 	"error":   true,
 			// 	"message": err.Error(),
@@ -108,14 +110,15 @@ func (cu *CustomerApi) UserLogout() gin.HandlerFunc {
 
 		err := c.ShouldBindJSON(&credential)
 		if err != nil {
-			c.JSON(401, gin.H{
-				"message": "cant bind json",
-			})
+			// c.JSON(400, gin.H{
+			// 	"message": "cant bind json",
+			// })
+			response.NewErrorResponse(400, "Cant bind json", nil)
 			return
 		}
 		err = cu.logoutUseCase.Logout(credential.Id)
 		if err != nil {
-			response.NewErrorResponse(401, err.Error(), nil)
+			response.NewErrorResponse(400, err.Error(), nil)
 
 			// c.JSON(401, gin.H{
 			// 	"error":   true,
@@ -139,14 +142,15 @@ func (cu *CustomerApi) UserTransfer() gin.HandlerFunc {
 		err := c.BindJSON(&transferReq)
 		response := response.NewResponse(c)
 		if err != nil {
-			c.JSON(401, gin.H{
-				"message": "cant bind json",
-			})
+			// c.JSON(400, gin.H{
+			// 	"message": "cant bind json",
+			// })
+			response.NewErrorResponse(400, "Cant bind json", nil)
 			return
 		}
 		err = cu.transferUseCase.Transfer(transferReq.SenderId, transferReq.SenderPin, transferReq.SenderAccNumber, transferReq.ReceiverAccountNumber, transferReq.Amount, transferReq.IsMerchant)
 		if err != nil {
-			response.NewErrorResponse(401, err.Error(), nil)
+			response.NewErrorResponse(400, err.Error(), nil)
 
 			// c.JSON(401, gin.H{
 			// 	"error":   true,
@@ -157,7 +161,7 @@ func (cu *CustomerApi) UserTransfer() gin.HandlerFunc {
 		}
 		err = cu.addLogUseCase.AddLog(idHistory, transferReq.SenderAccNumber, transferReq.ReceiverAccountNumber, timeNow, transferReq.IsMerchant)
 		if err != nil {
-			response.NewErrorResponse(401, err.Error(), nil)
+			response.NewErrorResponse(400, err.Error(), nil)
 
 			// c.JSON(401, gin.H{
 			// 	"error":   true,
@@ -168,7 +172,7 @@ func (cu *CustomerApi) UserTransfer() gin.HandlerFunc {
 		}
 		err = cu.addTransactionDetailUsecase.AddTransactionDetail(idTransactionDetails, idHistory, transferReq.SenderId, transferReq.Message, transferReq.Amount)
 		if err != nil {
-			response.NewErrorResponse(401, err.Error(), nil)
+			response.NewErrorResponse(400, err.Error(), nil)
 
 			// c.JSON(401, gin.H{
 			// 	"error":   true,
@@ -179,7 +183,7 @@ func (cu *CustomerApi) UserTransfer() gin.HandlerFunc {
 		}
 		newTransactionDetail, err := cu.getTransactionDetailUseCase.GetTransactionDetail(idTransactionDetails, idHistory, transferReq.IsMerchant)
 		if err != nil {
-			response.NewErrorResponse(401, err.Error(), nil)
+			response.NewErrorResponse(400, err.Error(), nil)
 			// c.JSON(401, gin.H{
 			// 	"error":   true,
 			// 	"message": err.Error(),
@@ -203,7 +207,7 @@ func (cu *CustomerApi) GetAllTransaction() gin.HandlerFunc {
 			// 	"message": err.Error(),
 			// 	"data":    nil,
 			// })
-			response.NewErrorResponse(401, err.Error(), nil)
+			response.NewErrorResponse(400, err.Error(), nil)
 
 			return
 		}
@@ -224,14 +228,15 @@ func (cu *CustomerApi) GetBalanceUser() gin.HandlerFunc {
 
 		err := c.BindJSON(&transactionReq)
 		if err != nil {
-			c.JSON(401, gin.H{
-				"message": "cant bind json",
-			})
+			// c.JSON(400, gin.H{
+			// 	"message": "cant bind json",
+			// })
+			response.NewErrorResponse(400, "Cant bind json", nil)
 			return
 		}
 		balance, err := cu.getBalanceUserUseCase.GetBalance(transactionReq.SenderId, transactionReq.SenderPin)
 		if err != nil {
-			response.NewErrorResponse(401, err.Error(), nil)
+			response.NewErrorResponse(400, err.Error(), nil)
 
 			// c.JSON(401, gin.H{
 			// 	"error":   true,
