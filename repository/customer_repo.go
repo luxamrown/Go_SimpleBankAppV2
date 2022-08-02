@@ -17,6 +17,7 @@ type CustomerRepo interface {
 	AddTransactionDetail(id, historyId, customerId, message string, amount int) error
 	GetTransactionDetail(idDetail, idHistory string, isMerchant bool) (model.TransactionDetail, error)
 	GetAllTransactionDetail(idCustomer string) ([]model.TransactionDetail, error)
+	GetBalanceUser(idCustomer, pin string) (*int, error)
 	Logout(id string) error
 }
 
@@ -79,7 +80,6 @@ func (c *customerRepoImpl) Login(username, password string) (string, error) {
 
 func (c *customerRepoImpl) Transfer(sender_id, sender_pin, senderAccountNumber, receiverAccountNumber string, amount int, isMerchant bool) error {
 	var isAuth int
-	var selectedPin string
 	err := c.customerDB.Get(&isAuth, "SELECT COUNT(id) FROM customers WHERE id = $1 AND account_number = $2", sender_id, senderAccountNumber)
 	if err != nil {
 		return err
@@ -87,13 +87,9 @@ func (c *customerRepoImpl) Transfer(sender_id, sender_pin, senderAccountNumber, 
 	if isAuth == 0 {
 		return fmt.Errorf("unauthorized user")
 	}
-	err = c.customerDB.Get(&selectedPin, "SELECT user_pin FROM customers WHERE id = $1", sender_id)
+	err = c.PinChecker(sender_id, sender_pin)
 	if err != nil {
 		return err
-	}
-	matchPin := util.CheckHash(sender_pin, selectedPin)
-	if !matchPin {
-		return fmt.Errorf("wrong pin")
 	}
 	err = c.ReceiverExistsChecker(receiverAccountNumber, isMerchant)
 	if err != nil {
@@ -248,6 +244,19 @@ func (c *customerRepoImpl) GetAllTransactionDetail(idCustomer string) ([]model.T
 	return ListTransaction, nil
 }
 
+func (c *customerRepoImpl) GetBalanceUser(idCustomer, pin string) (*int, error) {
+	var selectedBalance *int
+	err := c.PinChecker(idCustomer, pin)
+	if err != nil {
+		return nil, err
+	}
+	err = c.customerDB.Get(&selectedBalance, "SELECT balance FROM customers WHERE id = $1", idCustomer)
+	if err != nil {
+		return nil, err
+	}
+	return selectedBalance, nil
+}
+
 func (c *customerRepoImpl) ReceiverExistsChecker(accountNumber string, isMerchant bool) error {
 	var isReceiverExist int
 	if isMerchant {
@@ -266,6 +275,19 @@ func (c *customerRepoImpl) ReceiverExistsChecker(accountNumber string, isMerchan
 	}
 	if isReceiverExist == 0 {
 		return fmt.Errorf("receiver not found")
+	}
+	return nil
+}
+
+func (c *customerRepoImpl) PinChecker(idCustomer, pin string) error {
+	var selectedPin string
+	err := c.customerDB.Get(&selectedPin, "SELECT user_pin FROM customers WHERE id = $1", idCustomer)
+	if err != nil {
+		return err
+	}
+	matchPin := util.CheckHash(pin, selectedPin)
+	if !matchPin {
+		return fmt.Errorf("wrong pin")
 	}
 	return nil
 }

@@ -11,7 +11,7 @@ type LogoutReq struct {
 	Id string `json:"account_id"`
 }
 
-type TransferReq struct {
+type TransactionReq struct {
 	SenderAccNumber       string `json:"sender_account_number"`
 	SenderId              string `json:"sender_id"`
 	SenderPin             string `json:"sender_pin"`

@@ -12,7 +12,8 @@ type UseCaseManager interface {
 	AddLogUseCase() usecase.AddLogUseCase
 	AddTransactionDetailUseCase() usecase.AddTransactionDetailUseCase
 	GetTransactionDetailUseCase() usecase.GetTransactionDetailUseCase
-	GetAllTransactionDetail() usecase.GetAllTransactionUseCase
+	GetAllTransactionDetailUseCase() usecase.GetAllTransactionUseCase
+	GetBalanceUserUseCase() usecase.GetBalanceUserUseCase
 }
 
 type useCaseManager struct {
@@ -47,8 +48,12 @@ func (u *useCaseManager) GetTransactionDetailUseCase() usecase.GetTransactionDet
 	return usecase.NewGetTransactionDetailUseCase(u.repo.CustomerRepo())
 }
 
-func (u *useCaseManager) GetAllTransactionDetail() usecase.GetAllTransactionUseCase {
+func (u *useCaseManager) GetAllTransactionDetailUseCase() usecase.GetAllTransactionUseCase {
 	return usecase.NewGetAllTransactionUseCase(u.repo.CustomerRepo())
+}
+
+func (u *useCaseManager) GetBalanceUserUseCase() usecase.GetBalanceUserUseCase {
+	return usecase.NewGetBalanceUserUseCase(u.repo.CustomerRepo())
 }
 
 func NewUseCaseManager(repo RepoManager) UseCaseManager {
