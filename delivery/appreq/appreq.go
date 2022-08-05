@@ -1,10 +1,10 @@
 package appreq
 
 type RegisterReq struct {
-	UserName     string `json:"user_name"`
-	UserPin      string `json:"user_pin"`
-	UserPassword string `json:"user_password"`
-	Balance      int    `json:"balance"`
+	UserName     string `json:"user_name" binding:"required"`
+	UserPin      string `json:"user_pin" binding:"required"`
+	UserPassword string `json:"user_password" binding:"required"`
+	Balance      int    `json:"balance" binding:"required"`
 }
 
 type LogoutReq struct {

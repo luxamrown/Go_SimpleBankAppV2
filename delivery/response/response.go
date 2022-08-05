@@ -3,7 +3,7 @@ package response
 import "github.com/gin-gonic/gin"
 
 type Response interface {
-	NewErrorResponse(status int, message string, data interface{})
+	NewErrorResponse(status int, errorCode string, message string, data interface{})
 	NewSuccesMessage(status int, message string, data interface{})
 }
 
@@ -15,11 +15,12 @@ type response struct {
 	// Data      interface{} `json:"data"`
 }
 
-func (r *response) NewErrorResponse(status int, message string, data interface{}) {
+func (r *response) NewErrorResponse(status int, errorCode string, message string, data interface{}) {
 	r.ctx.JSON(status, gin.H{
-		"error":   true,
-		"message": message,
-		"data":    nil,
+		"error":      true,
+		"error_code": errorCode,
+		"message":    message,
+		"data":       nil,
 	})
 }
 

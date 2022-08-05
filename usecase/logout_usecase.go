@@ -1,16 +1,19 @@
 package usecase
 
-import "mohamadelabror.me/simplebankappv2/repository"
+import (
+	"mohamadelabror.me/simplebankappv2/delivery/response"
+	"mohamadelabror.me/simplebankappv2/repository"
+)
 
 type LogoutUseCase interface {
-	Logout(id string) error
+	Logout(id string) *response.ErrorResp
 }
 
 type logoutUseCase struct {
 	customerRepo repository.CustomerRepo
 }
 
-func (l *logoutUseCase) Logout(id string) error {
+func (l *logoutUseCase) Logout(id string) *response.ErrorResp {
 	return l.customerRepo.Logout(id)
 }
 
